@@ -1,11 +1,8 @@
-
-
-
 #include <Wire.h>
-#include <LiquidCrystal_I2C.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 
-
-// NOTAS MÚSICAIS NECESSÁRIAS PARA O TOQUE
+// NOTAS MUSICAIS NECESSÁRIAS PARA O TOQUE
 #define NOTE_E5  659
 #define NOTE_D5  587
 #define NOTE_FS4 370
@@ -17,18 +14,21 @@
 #define NOTE_A4  440
 #define NOTE_CS4 277
 
-int buzzer = 0;  
-int botao = 4;   
+int buzzer = 21;  
+int botao = 0;   
 
-// pinos I2C do display no ESP32-C3 Super Mini
+// Pinos I2C do display no ESP32-C3 Super Mini
 #define SDA_PIN 8
 #define SCL_PIN 9
 
-LiquidCrystal_I2C lcd(0x27, 16, 2);
+// Configurações do Display OLED SSD1306
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 int tempo = 180;
 
-//Lista com o toque da Nokia
+// Lista com o toque da Nokia
 int melody[] = {
   NOTE_E5, 8, NOTE_D5, 8, NOTE_FS4, 4, NOTE_GS4, 4, 
   NOTE_CS5, 8, NOTE_B4, 8, NOTE_D4, 4, NOTE_E4, 4, 
@@ -61,30 +61,46 @@ void toca_Nokia() {
 }
 
 // -----------------------------------------------------------------------
-// Escreve duas linhas no display
+// Escreve duas linhas no display OLED
 // -----------------------------------------------------------------------
 void mostra_visor(String linha1, String linha2 = "") {
-  lcd.backlight();
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print(linha1);
+  display.clearDisplay();
+  display.setTextColor(SSD1306_WHITE);
+  
+  // Exibe a primeira linha (Texto de tamanho médio)
+  display.setTextSize(2);
+  display.setCursor(0, 10);
+  display.println(linha1);
+  
+  // Exibe a segunda linha se ela existir
   if (linha2 != "") {
-    lcd.setCursor(0, 1);
-    lcd.print(linha2);
+    display.setTextSize(2);
+    display.setCursor(0, 35);
+    display.println(linha2);
   }
+  
+  display.display();
 }
 
-
+// -----------------------------------------------------------------------
+// Limpa e desliga visualmente o visor OLED
+// -----------------------------------------------------------------------
 void desliga_visor() {
-  lcd.clear();
-  lcd.noBacklight();
+  display.clearDisplay();
+  display.display();
 }
 
 void setup() {
   pinMode(botao, INPUT_PULLUP);
 
+  // Inicializa o barramento I2C com os pinos do ESP32-C3 Super Mini
   Wire.begin(SDA_PIN, SCL_PIN);
-  lcd.init();
+
+  // Inicializa o display OLED no endereço 0x3C
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    // Se falhar, o código trava aqui para avisar que há um erro de hardware
+    for(;;); 
+  }
 
   desliga_visor(); 
 }
